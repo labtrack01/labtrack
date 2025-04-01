@@ -1,4 +1,4 @@
-import { utils, writeFile } from 'xlsx';
+import { Workbook, Column } from 'exceljs';
 import { format } from 'date-fns';
 
 interface InventoryItem {
@@ -42,23 +42,67 @@ const formatItemForExport = (item: InventoryItem) => {
 };
 
 // Export to CSV
-export const exportToCSV = (items: InventoryItem[], filename: string) => {
+export const exportToCSV = async (items: InventoryItem[], filename: string) => {
   const formattedData = items.map(formatItemForExport);
-  const worksheet = utils.json_to_sheet(formattedData);
-  const workbook = utils.book_new();
-  utils.book_append_sheet(workbook, worksheet, 'Inventory');
-  writeFile(workbook, filename);
+  const headers = Object.keys(formattedData[0]);
+  
+  const csvContent = [
+    headers.join(','),
+    ...formattedData.map(item => 
+      Object.values(item).map(value => 
+        typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))
+          ? `"${value.replace(/"/g, '""')}"`
+          : value
+      ).join(',')
+    )
+  ].join('\n');
+
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
 };
 
 // Export to XLSX
-export const exportToXLSX = (items: InventoryItem[]) => {
+export const exportToXLSX = async (items: InventoryItem[]) => {
   const timestamp = format(new Date(), 'yyyy-MM-dd-HHmm');
   const filename = `inventory-export-${timestamp}.xlsx`;
   const formattedData = items.map(formatItemForExport);
-  const worksheet = utils.json_to_sheet(formattedData);
-  const workbook = utils.book_new();
-  utils.book_append_sheet(workbook, worksheet, 'Inventory');
-  writeFile(workbook, filename);
+  
+  const workbook = new Workbook();
+  const worksheet = workbook.addWorksheet('Inventory');
+  
+  // Add headers
+  const headers = Object.keys(formattedData[0]);
+  worksheet.addRow(headers);
+  
+  // Add data
+  formattedData.forEach(item => {
+    worksheet.addRow(Object.values(item));
+  });
+  
+  // Style the worksheet
+  worksheet.getRow(1).font = { bold: true };
+  // Set column widths
+  const columnCount = worksheet.columnCount;
+  for (let i = 1; i <= columnCount; i++) {
+    worksheet.getColumn(i).width = 15;
+  }
+  
+  // Generate and download file
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
 };
 
 // Export to JSON
