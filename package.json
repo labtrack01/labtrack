@@ -1,6 +1,7 @@
 {
   "name": "labtrack-app",
   "version": "0.1.0",
+  "description": "A modern inventory management system for biotech labs with AI expiry predictions and IoT integration",
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
