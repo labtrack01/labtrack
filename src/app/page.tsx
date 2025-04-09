@@ -26,6 +26,7 @@ import { deleteItemAction } from '@/app/actions'; // Import necessary icons and 
 import { exportToCSV, exportToXLSX, exportToJSON } from '@/utils/export';
 import { Menu } from '@headlessui/react';
 import { ChevronDownIcon } from '@heroicons/react/24/solid';
+import Link from 'next/link';
 
 // Define the type for our inventory items based on the SQL schema
 interface InventoryItem {
@@ -399,7 +400,14 @@ export default function InventoryPage() {
           <TableBody>
             {filteredItems.map((item) => (
               <TableRow key={item.id}>
-                <TableCell>{item.name}</TableCell>
+                <TableCell>
+                  <Link
+                    href={`/items/${item.id}`}
+                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    {item.name}
+                  </Link>
+                </TableCell>
                 <TableCell>{`${item.quantity_current} ${item.quantity_unit}`}</TableCell>
                 <TableCell>{item.location_description ?? 'N/A'}</TableCell>
                 <TableCell>
